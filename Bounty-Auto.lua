@@ -1,6 +1,7 @@
 --[[ 
     BOUNTY HUNTER LOGIC SCRIPT
     Custom UI Implementation - Professional & Clean
+    Logic Ported from Original
 ]]
 
 local Players = game:GetService("Players")
@@ -16,6 +17,10 @@ local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local CFG = getgenv().Setting
+
+-- Ensure Config Integrity
+if not CFG.Melee then CFG.Melee = {Enable=true, Z={Enable=true, HoldTime=0.1}, X={Enable=true, HoldTime=0.1}, C={Enable=true, HoldTime=0.1}} end
+if not CFG.SafeHealth then CFG.SafeHealth = {Health=4000, Enable=true} end
 
 --------------------------------------------------------------------------------
 -- // CUSTOM UI LIBRARY // --
@@ -66,11 +71,11 @@ local ScreenGui = UI:Create("ScreenGui", {
 })
 ProtectGui(ScreenGui)
 
--- Main Frame
+-- Main Frame (Dark Theme, Rounded)
 local MainFrame = UI:Create("Frame", {
     Name = "MainFrame",
     Parent = ScreenGui,
-    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
+    BackgroundColor3 = Color3.fromRGB(20, 20, 25),
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, -275, 0.5, -175),
     Size = UDim2.new(0, 550, 0, 350),
@@ -82,59 +87,43 @@ UI:Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = MainFrame })
 local Header = UI:Create("Frame", {
     Name = "Header",
     Parent = MainFrame,
-    BackgroundColor3 = Color3.fromRGB(30, 30, 35),
+    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
     BorderSizePixel = 0,
-    Size = UDim2.new(1, 0, 0, 40)
+    Size = UDim2.new(1, 0, 0, 45)
+})
+-- Gradient Line
+local GradientLine = UI:Create("Frame", {
+    Parent = Header,
+    BorderSizePixel = 0,
+    Position = UDim2.new(0, 0, 1, -2),
+    Size = UDim2.new(1, 0, 0, 2),
+    BackgroundColor3 = Color3.fromRGB(85, 170, 255)
 })
 UI:Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = Header })
--- Fix bottom corners of header
-local HeaderCover = UI:Create("Frame", {
-    Parent = Header,
-    BackgroundColor3 = Color3.fromRGB(30, 30, 35),
-    BorderSizePixel = 0,
-    Position = UDim2.new(0, 0, 1, -10),
-    Size = UDim2.new(1, 0, 0, 10)
-})
 
 local Title = UI:Create("TextLabel", {
     Parent = Header,
     BackgroundTransparency = 1,
-    Position = UDim2.new(0, 15, 0, 0),
+    Position = UDim2.new(0, 20, 0, 0),
     Size = UDim2.new(0, 200, 1, 0),
     Font = Enum.Font.GothamBold,
-    Text = "BOUNTY <font color=\"rgb(85, 170, 255)\">HUNTER</font>",
+    Text = "BOUNTY <font color=\"rgb(85, 170, 255)\">HUNTER</font> PRO",
     TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextSize = 16,
+    TextSize = 18,
     TextXAlignment = Enum.TextXAlignment.Left,
     RichText = true
 })
 
 UI:MakeDraggable(MainFrame, Header)
 
--- Tabs Container
+-- Tabs
 local TabContainer = UI:Create("Frame", {
-    Name = "TabContainer",
     Parent = MainFrame,
-    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
     BorderSizePixel = 0,
-    Position = UDim2.new(0, 0, 0, 40),
-    Size = UDim2.new(0, 130, 1, -40)
+    Position = UDim2.new(0, 0, 0, 45),
+    Size = UDim2.new(0, 140, 1, -45)
 })
-UI:Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = TabContainer })
-local TabCover = UI:Create("Frame", {
-    Parent = TabContainer,
-    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
-    BorderSizePixel = 0,
-    Position = UDim2.new(1, -10, 0, 0),
-    Size = UDim2.new(0, 10, 1, 0)
-})
-local TabCoverTop = UI:Create("Frame", {
-    Parent = TabContainer,
-    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
-    BorderSizePixel = 0,
-    Size = UDim2.new(1, 0, 0, 10)
-})
-
 local TabHolder = UI:Create("ScrollingFrame", {
     Parent = TabContainer,
     BackgroundTransparency = 1,
@@ -143,20 +132,15 @@ local TabHolder = UI:Create("ScrollingFrame", {
     CanvasSize = UDim2.new(0, 0, 0, 0),
     ScrollBarThickness = 0
 })
-UI:Create("UIListLayout", {
-    Parent = TabHolder,
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Padding = UDim.new(0, 5)
-})
+UI:Create("UIListLayout", { Parent = TabHolder, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) })
 UI:Create("UIPadding", { Parent = TabHolder, PaddingLeft = UDim.new(0, 10) })
 
--- Pages Container
+-- Pages
 local PageContainer = UI:Create("Frame", {
-    Name = "PageContainer",
     Parent = MainFrame,
     BackgroundTransparency = 1,
-    Position = UDim2.new(0, 140, 0, 50),
-    Size = UDim2.new(1, -150, 1, -60)
+    Position = UDim2.new(0, 150, 0, 55),
+    Size = UDim2.new(1, -160, 1, -65)
 })
 
 local Tabs = {}
@@ -168,20 +152,20 @@ function UI:AddTab(name, icon)
         Parent = TabHolder,
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, -10, 0, 30),
+        Size = UDim2.new(1, -10, 0, 32),
         Font = Enum.Font.GothamMedium,
         Text = "      " .. name,
         TextColor3 = Color3.fromRGB(150, 150, 150),
-        TextSize = 12,
+        TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
         AutoButtonColor = false
     })
+    UI:Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabButton })
     
-    -- Icon Integration (Simplified shapes for "Clean" look if no asset id)
     local IconFrame = UI:Create("ImageLabel", {
         Parent = TabButton,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 5, 0.5, -8),
+        Position = UDim2.new(0, 8, 0.5, -8),
         Size = UDim2.new(0, 16, 0, 16),
         Image = icon or "",
         ImageColor3 = Color3.fromRGB(150, 150, 150)
@@ -197,33 +181,27 @@ function UI:AddTab(name, icon)
         ScrollBarImageColor3 = Color3.fromRGB(60, 60, 65),
         Visible = false
     })
+    UI:Create("UIListLayout", { Parent = Page, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) })
     
-    local PageLayout = UI:Create("UIListLayout", {
-        Parent = Page,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 5)
-    })
-    
-    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 10)
+    Page.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, Page.UIListLayout.AbsoluteContentSize.Y + 10)
     end)
 
     local function Activate()
         if CurrentTab then
-            TweenService:Create(CurrentTab.Button, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+            TweenService:Create(CurrentTab.Button, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
             if CurrentTab.Icon then TweenService:Create(CurrentTab.Icon, TweenInfo.new(0.3), {ImageColor3 = Color3.fromRGB(150, 150, 150)}):Play() end
             CurrentTab.Page.Visible = false
         end
         CurrentTab = {Button = TabButton, Page = Page, Icon = IconFrame}
-        TweenService:Create(TabButton, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        TweenService:Create(TabButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(35, 35, 40), BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
         if icon then TweenService:Create(IconFrame, TweenInfo.new(0.3), {ImageColor3 = Color3.fromRGB(255, 255, 255)}):Play() end
         Page.Visible = true
     end
 
     TabButton.MouseButton1Click:Connect(Activate)
-    if #Tabs == 0 then Activate() end -- Select first tab
+    if #Tabs == 0 then Activate() end
     table.insert(Tabs, {Button = TabButton, Page = Page, Icon = IconFrame})
-
     return Page
 end
 
@@ -244,13 +222,13 @@ end
 function UI:AddToggle(page, text, configPath, callback)
     local ToggleFrame = UI:Create("Frame", {
         Parent = page,
-        BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+        BackgroundColor3 = Color3.fromRGB(30, 30, 35),
         BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 35)
+        Size = UDim2.new(1, 0, 0, 38)
     })
     UI:Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ToggleFrame })
 
-    local Label = UI:Create("TextLabel", {
+    UI:Create("TextLabel", {
         Parent = ToggleFrame,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 0),
@@ -262,7 +240,6 @@ function UI:AddToggle(page, text, configPath, callback)
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Resolve config value
     local currentVal = CFG
     for i=1, #configPath-1 do currentVal = currentVal[configPath[i]] end
     local key = configPath[#configPath]
@@ -270,29 +247,27 @@ function UI:AddToggle(page, text, configPath, callback)
 
     local Switch = UI:Create("TextButton", {
         Parent = ToggleFrame,
-        BackgroundColor3 = state and Color3.fromRGB(85, 170, 255) or Color3.fromRGB(60, 60, 65),
+        BackgroundColor3 = state and Color3.fromRGB(85, 170, 255) or Color3.fromRGB(45, 45, 50),
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -50, 0.5, -8),
-        Size = UDim2.new(0, 36, 0, 16),
+        Position = UDim2.new(1, -50, 0.5, -10),
+        Size = UDim2.new(0, 40, 0, 20),
         Text = "",
         AutoButtonColor = false
     })
-    local SwitchCorner = UI:Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Switch })
+    UI:Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Switch })
     local Circle = UI:Create("Frame", {
         Parent = Switch,
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        Size = UDim2.new(0, 12, 0, 12),
-        Position = state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
     })
     UI:Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Circle })
 
     Switch.MouseButton1Click:Connect(function()
         state = not state
         currentVal[key] = state
-        
-        TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(85, 170, 255) or Color3.fromRGB(60, 60, 65)}):Play()
-        TweenService:Create(Circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
-        
+        TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(85, 170, 255) or Color3.fromRGB(45, 45, 50)}):Play()
+        TweenService:Create(Circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
         if callback then callback(state) end
     end)
 end
@@ -300,9 +275,9 @@ end
 function UI:AddInput(page, text, configPath, numeric)
     local InputFrame = UI:Create("Frame", {
         Parent = page,
-        BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+        BackgroundColor3 = Color3.fromRGB(30, 30, 35),
         BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 35)
+        Size = UDim2.new(1, 0, 0, 38)
     })
     UI:Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = InputFrame })
 
@@ -324,9 +299,9 @@ function UI:AddInput(page, text, configPath, numeric)
 
     local TextBoxBg = UI:Create("Frame", {
         Parent = InputFrame,
-        BackgroundColor3 = Color3.fromRGB(30, 30, 35),
-        Position = UDim2.new(1, -110, 0.5, -10),
-        Size = UDim2.new(0, 100, 0, 20)
+        BackgroundColor3 = Color3.fromRGB(20, 20, 25),
+        Position = UDim2.new(1, -110, 0.5, -12),
+        Size = UDim2.new(0, 100, 0, 24)
     })
     UI:Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = TextBoxBg })
 
@@ -337,43 +312,40 @@ function UI:AddInput(page, text, configPath, numeric)
         Font = Enum.Font.Gotham,
         Text = tostring(currentVal[key]),
         TextColor3 = Color3.fromRGB(200, 200, 200),
-        TextSize = 11,
+        TextSize = 12,
         ClearTextOnFocus = false
     })
-
+    
     TextBox.FocusLost:Connect(function()
         local val = TextBox.Text
-        if numeric then
-            val = tonumber(val) or currentVal[key]
-        end
+        if numeric then val = tonumber(val) or currentVal[key] end
         currentVal[key] = val
         TextBox.Text = tostring(val)
     end)
 end
 
--- // CREATE UI PAGES // --
-local GeneralTab = UI:AddTab("General", "rbxassetid://10888331510") -- Home Icon
-local CombatTab = UI:AddTab("Combat", "rbxassetid://10888335436") -- Sword Icon
-local SettingsTab = UI:AddTab("Settings", "rbxassetid://10888339056") -- Settings Icon
+-- // PAGES // --
+local GeneralTab = UI:AddTab("General", "rbxassetid://10888331510") 
+local CombatTab = UI:AddTab("Combat", "rbxassetid://10888335436") 
+local SettingsTab = UI:AddTab("Settings", "rbxassetid://10888339056") 
 
--- General Page
+-- General
 UI:AddSection(GeneralTab, "Main Settings")
 UI:AddToggle(GeneralTab, "Auto Enable V3", {"Auto Enable V3"})
 UI:AddToggle(GeneralTab, "Auto Enable V4", {"Auto Enable V4"})
 UI:AddToggle(GeneralTab, "Skip Race V4", {"Skip Race V4"})
-UI:AddToggle(GeneralTab, "White Screen", {"White Screen"}, function(v) 
-    RunService:Set3dRenderingEnabled(not v) 
-end)
+UI:AddToggle(GeneralTab, "White Screen", {"White Screen"}, function(v) RunService:Set3dRenderingEnabled(not v) end)
 
 UI:AddSection(GeneralTab, "Teams")
--- Simple Team Toggle (Optimized for space, could be dropdown)
-UI:AddToggle(GeneralTab, "Pirates Team (Off = Marines)", {"Team"}, function(v)
+UI:AddToggle(GeneralTab, "Pirates Team", {"Team"}, function(v)
     local team = v and "Pirates" or "Marines"
+    if not v and getgenv().Setting.Team == "Pirates" then team = "Marines" elseif v and getgenv().Setting.Team == "Marines" then team = "Pirates" end
+    team = v and "Pirates" or "Marines"
     CFG.Team = team
     ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", team)
 end)
 
--- Combat Page
+-- Combat
 UI:AddSection(CombatTab, "Weapons")
 UI:AddToggle(CombatTab, "Use Melee", {"Melee", "Enable"})
 UI:AddToggle(CombatTab, "Use Sword", {"Sword", "Enable"})
@@ -383,17 +355,15 @@ UI:AddToggle(CombatTab, "Gun Mode (Snipe)", {"Gun", "GunMode"})
 
 UI:AddSection(CombatTab, "Safety")
 UI:AddToggle(CombatTab, "Safe Health", {"SafeHealth", "Enable"})
-UI:AddInput(CombatTab, "Safe Health %", {"SafeHealth", "Health"}, true)
+UI:AddInput(CombatTab, "Safe Health", {"SafeHealth", "Health"}, true)
 
--- Settings Page
+-- Settings
 UI:AddSection(SettingsTab, "Bounty Hunt")
 UI:AddInput(SettingsTab, "Min Bounty", {"Hunt", "Min"}, true)
 UI:AddInput(SettingsTab, "Max Bounty", {"Hunt", "Max"}, true)
-
 UI:AddSection(SettingsTab, "Skip Options")
 UI:AddToggle(SettingsTab, "Skip Fruit Users", {"Skip", "Fruit"})
-UI:AddToggle(SettingsTab, "Skip Safe SafeZone", {"Skip", "SafeZone"})
-
+UI:AddToggle(SettingsTab, "Skip SafeZones", {"Skip", "SafeZone"})
 UI:AddSection(SettingsTab, "Webhook")
 UI:AddToggle(SettingsTab, "Enable Webhook", {"Webhook", "Enabled"})
 UI:AddInput(SettingsTab, "Webhook URL", {"Webhook", "Url"}, false)
@@ -402,19 +372,92 @@ UI:AddInput(SettingsTab, "Webhook URL", {"Webhook", "Url"}, false)
 -- // LOGIC IMPLEMENTATION // --
 --------------------------------------------------------------------------------
 
--- Helper Functions
-local function VerifyConfig()
-     -- Ensure deep nested tables exist if config was partial
-     if not CFG.Melee then CFG.Melee = {Enable=true, Z={Enable=true, HoldTime=0.1}, X={Enable=true, HoldTime=0.1}, C={Enable=true, HoldTime=0.1}} end
-end
-VerifyConfig()
-
 getgenv().weapon = nil
 getgenv().targ = nil 
 getgenv().checked = {}
 _G.FastAttack = true
 
--- Ported FastAttack
+-- Island Data
+local placeId = game.PlaceId
+local worldMap = {[2753915549] = "World1",[85211729168715] = "World1",[4442272183] = "World2",[79091703265657] = "World2",[7449423635] = "World3",[100117331123089] = "World3"}
+local World1, World2, World3 = false, false, false
+if worldMap[placeId] then
+    local world = worldMap[placeId]
+    if world == "World1" then World1 = true
+    elseif world == "World2" then World2 = true
+    elseif world == "World3" then World3 = true
+    end
+end
+local distbyp, island
+if World3 then 
+    distbyp = 5000
+    island = {
+        ["Port Town"] = CFrame.new(-290, 6, 5343),
+        ["Hydra Island"] = CFrame.new(5749 + 50, 611, -276),
+        ["Mansion"] = CFrame.new(-12471 + 50, 374, -7551),
+        ["Castle On The Sea"] = CFrame.new(-5085 + 50, 316, -3156),
+        ["Haunted Island"] = CFrame.new(-9547, 141, 5535),
+        ["Great Tree"] = CFrame.new(2681, 1682, -7190),
+        ["Candy Island"] = CFrame.new(-1106, 13, -14231),
+        ["Cake Island"] = CFrame.new(-1903, 36, -11857),
+        ["Loaf Island"] = CFrame.new(-889, 64, -10895),
+        ["Peanut Island"] = CFrame.new(-1943, 37, -10288),
+        ["Cocoa Island"] = CFrame.new(147, 23, -12030),
+        ["Tiki Outpost"] = CFrame.new(-16234,9,416)
+    } 
+elseif World2 then 
+    distbyp = 3500
+    island = { 
+        a = CFrame.new(753, 408, -5274), b = CFrame.new(-5622, 492, -781), c = CFrame.new(-11, 29, 2771),
+        d = CFrame.new(-2448, 73, -3210), e = CFrame.new(-380, 77, 255), f = CFrame.new(-3032, 317, -10075),
+        g = CFrame.new(6148, 294, -6741), h = CFrame.new(923, 125, 32885), i = CFrame.new(-6127, 15, -5040)
+    }
+elseif World1 then 
+    distbyp = 1500
+    island = { 
+        a = CFrame.new(979, 16, 1429), b = CFrame.new(-2566, 6, 2045), c = CFrame.new(944, 20, 4373),
+        d = CFrame.new(-1181, 4, 3803), e = CFrame.new(-1612, 36, 149), f = CFrame.new(-690, 15, 1582)
+    } 
+end
+
+-- Teleport Logic
+local tween = nil
+function to(Pos)
+    pcall(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.Humanoid.Health > 0 then
+            local root = LocalPlayer.Character.HumanoidRootPart
+            local dist = (Pos.Position - root.Position).Magnitude
+            if not LocalPlayer.Character.PrimaryPart:FindFirstChild("Hold") then
+                local Hold = Instance.new("BodyVelocity", LocalPlayer.Character.PrimaryPart)
+                Hold.Name = "Hold"
+                Hold.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                Hold.Velocity = Vector3.zero
+            end
+            local speed = (dist < 1000) and 340 or 320
+            if tween then tween:Cancel() end
+            tween = TweenService:Create(root, TweenInfo.new(dist / speed, Enum.EasingStyle.Linear), {CFrame = Pos})
+            tween:Play()
+            root.CFrame = CFrame.new(root.CFrame.X, Pos.Y, root.CFrame.Z)
+        end
+    end)
+end
+
+function bypass(Pos) -- Simple bypass fallback
+    to(Pos)
+end
+
+function CheckSafeZone(targetChar)
+    if not CFG.Skip.SafeZone then return false end
+    if not workspace:FindFirstChild("_WorldOrigin") then return false end
+    for _, v in pairs(workspace._WorldOrigin.SafeZones:GetChildren()) do
+        if v:IsA("Part") and (v.Position - targetChar.Position).Magnitude <= 400 then
+            return true
+        end
+    end
+    return false
+end
+
+-- Combat
 if _G.FastAttack then
     local _ENV = (getgenv or getrenv or getfenv)();
     local function v0(v35, v36) local v37, v38 = pcall(function() return v35:WaitForChild(v36) end); return v38; end
@@ -430,7 +473,10 @@ if _G.FastAttack then
     local v29 = {AttackCooldown = 0, Connections = {}};
     v29.IsAlive = function(v41) return v41 and v41:FindFirstChild("Humanoid") and (v41.Humanoid.Health > 0); end;
     
-    local v43 = {Distance=60, attackMobs=true, attackPlayers=true}; -- Optimized
+    local v43 = {Distance=60, attackMobs=true, attackPlayers=true};
+    local v16 = v0(workspace, "Enemies");
+    local v15 = v0(workspace, "Characters");
+    
     local v44 = v0(v24, "RE/RegisterAttack");
     local v45 = v0(v24, "RE/RegisterHit");
 
@@ -447,8 +493,8 @@ if _G.FastAttack then
     v43.GetAllBladeHits = function(v72, v73, v74)
          local v75 = v73:GetPivot().Position
          local v76 = {}
-         v43:Process(v72.attackMobs, workspace.Enemies, v76, v75, v74)
-         v43:Process(v72.attackPlayers, workspace.Characters, v76, v75, v74)
+         v43:Process(v72.attackMobs, v16, v76, v75, v74)
+         v43:Process(v72.attackPlayers, v15, v76, v75, v74)
          return v76
     end
 
@@ -457,11 +503,10 @@ if _G.FastAttack then
          local tool = v8.Character:FindFirstChildOfClass("Tool")
          if not tool or (tool.ToolTip ~= "Melee" and tool.ToolTip ~= "Blox Fruit" and tool.ToolTip ~= "Sword") then return end
          
-         if (tick() - v29.AttackCooldown) > 0.1 then -- Simple rate limit
+         if (tick() - v29.AttackCooldown) > 0.1 then 
              local hits = v43:GetAllBladeHits(v8.Character, v43.Distance)
              if #hits > 0 then
-                 v44:FireServer(0.1) -- Simple register attack
-                 -- Ideally call RegisterHit here if we have the args correct, simplified for stability
+                 v44:FireServer(0.1) 
                  v45:FireServer(hits[1][2], hits) 
              end
              v2:SendMouseButtonEvent(0, 0, 0, true, game, 1)
@@ -477,31 +522,6 @@ if _G.FastAttack then
     table.insert(v29.Connections, v22:Connect(function() v43:Attack() end))
 end
 
--- Teleport & Bypass Logic
-local tween = nil
-function to(Pos)
-    pcall(function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.Humanoid.Health > 0 then
-            local root = LocalPlayer.Character.HumanoidRootPart
-            local dist = (Pos.Position - root.Position).Magnitude
-            if not LocalPlayer.Character.PrimaryPart:FindFirstChild("Hold") then
-                local Hold = Instance.new("BodyVelocity", LocalPlayer.Character.PrimaryPart)
-                Hold.Name = "Hold"
-                Hold.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                Hold.Velocity = Vector3.zero
-            end
-            
-            local speed = (dist < 1000) and 340 or 320
-            
-            if tween then tween:Cancel() end
-            tween = TweenService:Create(root, TweenInfo.new(dist / speed, Enum.EasingStyle.Linear), {CFrame = Pos})
-            tween:Play()
-            
-            root.CFrame = CFrame.new(root.CFrame.X, Pos.Y, root.CFrame.Z)
-        end
-    end)
-end
-
 function buso()
     if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("HasBuso") then
         ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
@@ -509,12 +529,9 @@ function buso()
 end
 
 function Ken()
-    if LocalPlayer.PlayerGui:FindFirstChild("ScreenGui") and LocalPlayer.PlayerGui.ScreenGui:FindFirstChild("ImageLabel") then
-        return true
-    else
+    if LocalPlayer.PlayerGui:FindFirstChild("ScreenGui") and LocalPlayer.PlayerGui.ScreenGui:FindFirstChild("ImageLabel") then return true else
         VirtualUser:CaptureController()
-        VirtualUser:SetKeyDown("0x65")
-        VirtualUser:SetKeyUp("0x65")
+        VirtualUser:SetKeyDown("0x65"); VirtualUser:SetKeyUp("0x65")
         return false
     end
 end
@@ -524,13 +541,6 @@ function down(key, holdTime)
         game:GetService("VirtualInputManager"):SendKeyEvent(true, key, false, game)
         task.wait(holdTime or 0.1)
         game:GetService("VirtualInputManager"):SendKeyEvent(false, key, false, game)
-    end)
-end
-
-function EquipWeapon(toolName)
-    pcall(function()
-        local bp = LocalPlayer.Backpack:FindFirstChild(toolName)
-        if bp then LocalPlayer.Character.Humanoid:EquipTool(bp) end
     end)
 end
 
@@ -544,21 +554,12 @@ function equip(tooltip)
     return false
 end
 
--- Utils
 function hasValue(tab, val) for _, v in pairs(tab) do if v == val then return true end end return false end
 local hopserver = false
 
 function HopServer()
-    -- Standard Hop Logic placeholder
-    -- In a real scenario, this queries Roblox game API for servers
-    -- Since we can't make external HTTP requests easily without proper perms in all executors, 
-    -- we simulate or use a simple loop if avail. 
-    -- Re-using a common public method:
     local PlaceID = game.PlaceId
-    local AllIDs = {}
-    local validCursor = ""
     local Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
-    
     for i,v in pairs(Site.data) do
         if v.playing < v.maxPlayers and v.id ~= game.JobId then
             TeleportService:TeleportToPlaceInstance(PlaceID, v.id, LocalPlayer)
@@ -567,27 +568,48 @@ function HopServer()
     end
 end
 
+function SkipPlayer()
+    getgenv().killed = getgenv().targ 
+    if getgenv().targ then table.insert(getgenv().checked, getgenv().targ) end
+    getgenv().targ = nil
+    -- Logic next target in main loop
+end
+
 function KillWebhook(target, bounty)
     if not CFG.Webhook.Enabled or CFG.Webhook.Url == "" then return end
-    
-    local data = {
-        embeds = {{
-            title = "Bounty Hunter Execution",
-            color = 65280,
-            fields = {
-                {name = "Target", value = target, inline = true},
-                {name = "Bounty", value = tostring(bounty), inline = true}
-            }
-        }}
-    }
-    
+    local data = { embeds = {{ title = "Bounty Hunter Execution", color = 65280, fields = {{name = "Target", value = target, inline = true}, {name = "Bounty", value = tostring(bounty), inline = true}} }} }
     pcall(function()
-        (syn and syn.request or http_request or request)({
-            Url = CFG.Webhook.Url,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = HttpService:JSONEncode(data)
-        })
+        (syn and syn.request or http_request or request)({ Url = CFG.Webhook.Url, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data) })
+    end)
+end
+
+function target() 
+    pcall(function()
+        local d = math.huge
+        local p = nil
+        getgenv().targ = nil        
+        for _, v in pairs(game.Players:GetPlayers()) do 
+            if v.Team ~= nil and (tostring(LocalPlayer.Team) == CFG.Team or (tostring(v.Team) == CFG.Team and tostring(LocalPlayer.Team) ~= CFG.Team)) then
+                if v and v:FindFirstChild("Data") and ((CFG.Skip.Fruit and hasValue(CFG.Skip.FruitList, v.Data.DevilFruit.Value) == false) or not CFG.Skip.Fruit) then
+                    if v ~= LocalPlayer and v ~= getgenv().targ and 
+                       v.Character and v.Character:FindFirstChild("HumanoidRootPart") and
+                       (v.Character.HumanoidRootPart.CFrame.Position - LocalPlayer.Character.HumanoidRootPart.CFrame.Position).Magnitude < d and 
+                       not hasValue(getgenv().checked, v) then
+
+                        -- Safety Check
+                        if not CheckSafeZone(v.Character.HumanoidRootPart) then
+                            local bounty = v.leaderstats["Bounty/Honor"] and v.leaderstats["Bounty/Honor"].Value or 0
+                            if bounty >= CFG.Hunt.Min and bounty <= CFG.Hunt.Max then
+                                 p = v 
+                                 d = (v.Character.HumanoidRootPart.CFrame.Position - LocalPlayer.Character.HumanoidRootPart.CFrame.Position).Magnitude
+                            end
+                        end
+                    end 
+                end
+            end
+        end         
+        if p == nil then hopserver = true else hopserver = false end        
+        getgenv().targ = p
     end)
 end
 
@@ -595,72 +617,44 @@ end
 spawn(function()
     while task.wait(0.5) do
         pcall(function()
-            -- Auto Enable PvP if disabled
-            if LocalPlayer.PlayerGui.Main.PvpDisabled.Visible then
+            if LocalPlayer.PlayerGui.Main:FindFirstChild("PvpDisabled") and LocalPlayer.PlayerGui.Main.PvpDisabled.Visible then
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp")
             end
             
-            -- Find Target
             if not getgenv().targ or not getgenv().targ.Parent then
-                local bestTarget = nil
-                local minDist = math.huge
-                
-                for _, v in pairs(Players:GetPlayers()) do
-                    if v ~= LocalPlayer and v.Team ~= LocalPlayer.Team then
-                        -- Config Checks
-                        local skip = false
-                        if CFG.Skip.Fruit and v.Data.DevilFruit.Value ~= "" then 
-                             if not hasValue(CFG.Skip.FruitList, v.Data.DevilFruit.Value) then skip = false else skip = true end -- Simplified logic based on list
-                        end
-                        -- SafeZone Check
-                        
-                        if not skip and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                            local dist = (v.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                            if dist < minDist then
-                                minDist = dist
-                                bestTarget = v
-                            end
-                        end
-                    end
-                end
-                
-                if bestTarget then 
-                    getgenv().targ = bestTarget
-                    -- Notification
-                else
-                    if hopserver then HopServer() end
-                end
+                target()
+                if not getgenv().targ and hopserver then HopServer() end
             end
             
-            -- Combat Logic
             if getgenv().targ and getgenv().targ.Character then
                 local tChar = getgenv().targ.Character
-                if tChar.Humanoid.Health <= 0 then
-                    -- Target dead
+                if tChar:FindFirstChild("Humanoid") and tChar.Humanoid.Health <= 0 then
                     KillWebhook(getgenv().targ.Name, "???")
-                    getgenv().targ = nil
+                    SkipPlayer()
                     return
                 end
                 
-                -- Move to Target
-                to(tChar.HumanoidRootPart.CFrame * CFrame.new(0, 5, 5))
-                
-                -- Attack
-                if (tChar.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 40 then
-                    buso()
-                    -- Weapon Switching
-                    if CFG.Melee.Enable then 
-                        getgenv().weapon = "Melee" 
-                        EquipWeapon("Electric Claw") -- Example, should detect current melee
-                    elseif CFG.Sword.Enable then 
-                        getgenv().weapon = "Sword" 
-                        equip("Sword")
-                    end
-                    
-                    -- Use Skills (Simplified for logic)
-                    if CFG.Melee.Enable then 
-                         down("Z", 0.1); down("X", 0.1); down("C", 0.1) 
-                    end
+                -- Check Safe Health to Retreat
+                if CFG.SafeHealth.Enable and LocalPlayer.Character.Humanoid.Health < CFG.SafeHealth.Health then
+                    -- Retreat Logic
+                    to(LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)) -- Fly up
+                else
+                    if tChar:FindFirstChild("HumanoidRootPart") then
+                        to(tChar.HumanoidRootPart.CFrame * CFrame.new(0, 5, 5))
+                        if (tChar.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 40 then
+                            buso()
+                            Ken()
+                            if not CFG.Gun.GunMode then
+                                if CFG.Melee.Enable then getgenv().weapon = "Melee" 
+                                elseif CFG.Sword.Enable then getgenv().weapon = "Sword"; equip("Sword") end
+                            end
+                            if CFG.Melee.Enable and tChar.Humanoid.Health > 0 then
+                                 down("Z", CFG.Melee.Z.HoldTime or 0.1)
+                                 down("X", CFG.Melee.X.HoldTime or 0.1)
+                                 down("C", CFG.Melee.C.HoldTime or 0.1)
+                            end
+                        end
+                    else SkipPlayer() end
                 end
             end
         end)
@@ -674,5 +668,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         MainFrame.Visible = Fullscreen
     end
 end)
-
-print("Logic Loaded")
+print("Logic Loaded Final")
