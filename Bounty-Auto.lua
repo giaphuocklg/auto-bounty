@@ -1,7 +1,7 @@
 --[[ 
-    BOUNTY HUNTER LOGIC SCRIPT
+    BOUNTY HUNTER LOGIC SCRIPT - KAITUN EDITION
     Custom UI Implementation - Professional & Clean
-    Logic Ported from Original
+    Fully Automated Logic Ported from Original
 ]]
 
 local Players = game:GetService("Players")
@@ -112,6 +112,19 @@ local Title = UI:Create("TextLabel", {
     TextSize = 18,
     TextXAlignment = Enum.TextXAlignment.Left,
     RichText = true
+})
+
+-- Status Label
+local StatusLabel = UI:Create("TextLabel", {
+    Parent = Header,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0.5, 0, 0, 0),
+    Size = UDim2.new(0.45, 0, 1, 0),
+    Font = Enum.Font.Gotham,
+    Text = "Status: Idle",
+    TextColor3 = Color3.fromRGB(200, 200, 200),
+    TextSize = 12,
+    TextXAlignment = Enum.TextXAlignment.Right
 })
 
 UI:MakeDraggable(MainFrame, Header)
@@ -376,6 +389,7 @@ getgenv().weapon = nil
 getgenv().targ = nil 
 getgenv().checked = {}
 _G.FastAttack = true
+local hopserver = false
 
 -- Island Data
 local placeId = game.PlaceId
@@ -440,10 +454,6 @@ function to(Pos)
             root.CFrame = CFrame.new(root.CFrame.X, Pos.Y, root.CFrame.Z)
         end
     end)
-end
-
-function bypass(Pos) -- Simple bypass fallback
-    to(Pos)
 end
 
 function CheckSafeZone(targetChar)
@@ -555,9 +565,9 @@ function equip(tooltip)
 end
 
 function hasValue(tab, val) for _, v in pairs(tab) do if v == val then return true end end return false end
-local hopserver = false
 
 function HopServer()
+    StatusLabel.Text = "Status: Hopping Server..."
     local PlaceID = game.PlaceId
     local Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
     for i,v in pairs(Site.data) do
@@ -572,6 +582,7 @@ function SkipPlayer()
     getgenv().killed = getgenv().targ 
     if getgenv().targ then table.insert(getgenv().checked, getgenv().targ) end
     getgenv().targ = nil
+    hopserver = false -- Reset hop flag to retry finding target in same server once before hopping again if empty
     -- Logic next target in main loop
 end
 
@@ -593,6 +604,7 @@ function target()
                 if v and v:FindFirstChild("Data") and ((CFG.Skip.Fruit and hasValue(CFG.Skip.FruitList, v.Data.DevilFruit.Value) == false) or not CFG.Skip.Fruit) then
                     if v ~= LocalPlayer and v ~= getgenv().targ and 
                        v.Character and v.Character:FindFirstChild("HumanoidRootPart") and
+                       v.Character.HumanoidRootPart.CFrame.Y <= 12000 and
                        (v.Character.HumanoidRootPart.CFrame.Position - LocalPlayer.Character.HumanoidRootPart.CFrame.Position).Magnitude < d and 
                        not hasValue(getgenv().checked, v) then
 
@@ -608,7 +620,20 @@ function target()
                 end
             end
         end         
-        if p == nil then hopserver = true else hopserver = false end        
+        
+        if p == nil then 
+             if #game.Players:GetPlayers() <= 1 then
+                hopserver = true -- Hop if only me
+             else
+                -- If Checked all, maybe clear checked or hop
+                 if #getgenv().checked >= (#game.Players:GetPlayers() - 1) then
+                    hopserver = true
+                 end
+             end
+        else
+            hopserver = false
+            StatusLabel.Text = "Status: Target Found - " .. p.Name
+        end        
         getgenv().targ = p
     end)
 end
@@ -617,13 +642,19 @@ end
 spawn(function()
     while task.wait(0.5) do
         pcall(function()
+            -- Auto Enable PvP
             if LocalPlayer.PlayerGui.Main:FindFirstChild("PvpDisabled") and LocalPlayer.PlayerGui.Main.PvpDisabled.Visible then
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp")
             end
             
+            -- Find Target
             if not getgenv().targ or not getgenv().targ.Parent then
+                StatusLabel.Text = "Status: Scanning..."
                 target()
-                if not getgenv().targ and hopserver then HopServer() end
+                if hopserver then 
+                    StatusLabel.Text = "Status: No Targets. Hopping..."
+                    HopServer()
+                end
             end
             
             if getgenv().targ and getgenv().targ.Character then
@@ -636,10 +667,11 @@ spawn(function()
                 
                 -- Check Safe Health to Retreat
                 if CFG.SafeHealth.Enable and LocalPlayer.Character.Humanoid.Health < CFG.SafeHealth.Health then
-                    -- Retreat Logic
-                    to(LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)) -- Fly up
+                    StatusLabel.Text = "Status: Low Health! Retreating..."
+                    to(LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)) 
                 else
                     if tChar:FindFirstChild("HumanoidRootPart") then
+                        StatusLabel.Text = "Status: Attacking " .. getgenv().targ.Name
                         to(tChar.HumanoidRootPart.CFrame * CFrame.new(0, 5, 5))
                         if (tChar.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 40 then
                             buso()
@@ -668,4 +700,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         MainFrame.Visible = Fullscreen
     end
 end)
-print("Logic Loaded Final")
+print("Logic Loaded Final - Kaitun Mode Active")
